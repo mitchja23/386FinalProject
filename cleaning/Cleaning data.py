@@ -48,11 +48,6 @@ desired_cols = [
     'zip'
 ]
 
-
-import pandas as pd
-from pathlib import Path
-import re
-
 def clean_city_datasets(file_list):
     """
     Cleans multiple crime datasets and stacks them into one master DataFrame.
