@@ -1,5 +1,4 @@
 import pandas as pd 
-from pathlib import Path
 import os
 import re
 
@@ -67,10 +66,6 @@ def clean_city_datasets(file_list):
     
     for file in file_list:
         df = pd.read_csv(file)
-        name = Path(file).stem
-        
-        if 'location' in df.columns:
-            df = df.drop(columns=['location'])
         
         if 'incident_type_primary' in df.columns:
             df['incident_type_primary'] = df['incident_type_primary'].astype(str)
