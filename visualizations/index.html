@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Utah Crime Spatial Migration · 2007–2019</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -12,15 +13,9 @@
     <div id="header-title">Utah Crime Spatial Migration <span class="year-range">2007 – 2019</span></div>
   </header>
 
-  <main id="layout">>
+  <main id="layout">
     <div id="map-wrap">
       <div id="map"></div>
-
-      <div id="legend">
-        <div id="legend-title">Heat Intensity</div>
-        <div id="legend-gradient"></div>
-        <div id="legend-labels"><span>Low</span><span>High</span></div>
-      </div>
     </div>
 
     <aside id="chart-panel">
@@ -73,6 +68,14 @@
     </div>
   </div>
 
+
+  <script src="js/map.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
   <script>
     fetch('./data/crime_data.json')
       .then(function(r) {
@@ -80,9 +83,14 @@
         return r.json();
       })
       .then(function(data) {
-        initMap(data);
-        initChart(data);
-        initControls(data);
+        if (typeof window.initMap !== 'function') {
+          throw new Error(
+            'Map script did not load.'
+          );
+        }
+        window.initMap(data);
+        window.initChart(data);
+        window.initControls(data);
         document.getElementById('loading-overlay').style.display = 'none';
       })
       .catch(function(err) {
