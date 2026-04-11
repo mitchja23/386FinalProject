@@ -112,7 +112,7 @@ def clean_city_datasets(file_list):
             df['city'] = df['city'].str.title() 
             df['city'] = df['city'].replace({'S Salt Lake': 'South Salt Lake'})
         
-        # 🔹 ADD SEASON
+
         if 'date' in df.columns:
             df = add_season(df, 'date')
         
@@ -145,7 +145,6 @@ def clean_assult_dataset(file):
     df['date'] = df['incident_datetime'].dt.strftime('%m/%d/%Y')
     df['time_of_day'] = df['incident_datetime'].dt.strftime('%H:%M')
     
-    # 🔹 ADD SEASON
     df = add_season(df, 'date')
     
     day_map = {
@@ -203,7 +202,6 @@ def clean_slc_datasets(file_list):
         df['date'] = df['incident_datetime'].dt.strftime('%m/%d/%Y')
         df['time_of_day'] = df['incident_datetime'].dt.strftime('%H:%M')
         
-        # 🔹 ADD SEASON
         df = add_season(df, 'date')
         
         df['day_of_week'] = df['day_of_week'].apply(
