@@ -2,6 +2,34 @@ import pandas as pd
 import os
 import re
 
+def add_season(df, date_col='date'):
+    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+    
+    def get_season(d):
+        if pd.isna(d):
+            return pd.NA
+        
+        year = d.year
+        
+        spring = pd.Timestamp(f"{year}-03-20")
+        summer = pd.Timestamp(f"{year}-06-21")
+        fall   = pd.Timestamp(f"{year}-09-23")
+        winter = pd.Timestamp(f"{year}-12-21")
+        
+        if d >= spring and d < summer:
+            return 'Spring'
+        elif d >= summer and d < fall:
+            return 'Summer'
+        elif d >= fall and d < winter:
+            return 'Fall'
+        else:
+            return 'Winter'
+    
+    df['season'] = df[date_col].apply(get_season)
+    
+    return df
+
+
 city_datasets = [
     "south_salt_lake_crime.csv",
     "south_jordan_crime.csv",
@@ -44,24 +72,12 @@ desired_cols = [
     'latitude',
     'longitude',
     'address',
-    'zip'
+    'zip',
+    'season'
 ]
 
 
 def clean_city_datasets(file_list):
-    """
-    Cleans multiple crime datasets and stacks them into one master DataFrame.
-    
-    Steps:
-    - Cleans 'incident_type_primary': removes brackets, special characters, capitalizes words
-    - Splits 'incident_datetime' into 'date' and 'time_of_day' in 24-hour format
-    - Capitalizes 'day_of_week'
-    - Drops 'location' column if present
-    - Renames 'address_1' to 'address'
-    - Standardizes city names
-    - Keeps only the specified columns in order
-    - Stacks all datasets into one master DataFrame
-    """
     cleaned_dfs = []
     
     for file in file_list:
@@ -96,31 +112,19 @@ def clean_city_datasets(file_list):
             df['city'] = df['city'].str.title() 
             df['city'] = df['city'].replace({'S Salt Lake': 'South Salt Lake'})
         
-    
+        # 🔹 ADD SEASON
+        if 'date' in df.columns:
+            df = add_season(df, 'date')
+        
         cols_to_keep = [col for col in desired_cols if col in df.columns]
         df = df[cols_to_keep]
         
         cleaned_dfs.append(df)
     
-    city_df = pd.concat(cleaned_dfs, ignore_index=True)
-    
-    return city_df
+    return pd.concat(cleaned_dfs, ignore_index=True)
 
 
 def clean_assult_dataset(file):
-    """
-    Cleans a single new-style crime dataset to match the master dataset format.
-    All rows are assigned city = 'Salt Lake City'.
-    
-    Steps:
-    - Maps columns to master dataset names
-    - Converts numeric day_of_week to weekday names
-    - Splits incident_datetime into date & time_of_day in 24-hour format
-    - Extracts latitude & longitude from LOCATION
-    - Capitalizes incident_type_primary
-    - Renames address
-    - Adds missing columns (city, parent_incident_type, zip)
-    """
     df = pd.read_csv(file)
     
     df = df.rename(columns={
@@ -141,14 +145,12 @@ def clean_assult_dataset(file):
     df['date'] = df['incident_datetime'].dt.strftime('%m/%d/%Y')
     df['time_of_day'] = df['incident_datetime'].dt.strftime('%H:%M')
     
+    # 🔹 ADD SEASON
+    df = add_season(df, 'date')
+    
     day_map = {
-        1: "Monday",
-        2: "Tuesday",
-        3: "Wednesday",
-        4: "Thursday",
-        5: "Friday",
-        6: "Saturday",
-        7: "Sunday"
+        1: "Monday", 2: "Tuesday", 3: "Wednesday",
+        4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday"
     }
     df['day_of_week'] = df['day_of_week'].apply(
         lambda x: day_map.get(int(x)) if str(x).isdigit() else str(x).capitalize()
@@ -159,8 +161,7 @@ def clean_assult_dataset(file):
         if match:
             lat, lon = match.groups()
             return float(lat), float(lon)
-        else:
-            return None, None
+        return None, None
     
     df['latitude'], df['longitude'] = zip(*df['LOCATION'].apply(extract_lat_lon))
     
@@ -170,36 +171,15 @@ def clean_assult_dataset(file):
         if col not in df.columns:
             df[col] = pd.NA
     
-    assult_df = df[desired_cols]
-    
-    return assult_df
+    return df[desired_cols]
 
 
 def clean_slc_datasets(file_list):
-    """
-    Cleans multiple traffic-style crime datasets and stacks them into one DataFrame
-    matching the master dataset format.
-    
-    Steps:
-    - Maps columns to master dataset
-    - Converts numeric day_of_week to weekday names
-    - Splits REPORT DATE into date & time_of_day (24-hour format)
-    - Capitalizes incident_type_primary
-    - Renames Location 1 to address
-    - Fills city with 'Salt Lake City'
-    - Adds missing columns (parent_incident_type, zip)
-    - Keeps latitude & longitude as NaN for compatibility
-    """
     cleaned_dfs = []
     
     day_map = {
-        1: "Monday",
-        2: "Tuesday",
-        3: "Wednesday",
-        4: "Thursday",
-        5: "Friday",
-        6: "Saturday",
-        7: "Sunday"
+        1: "Monday", 2: "Tuesday", 3: "Wednesday",
+        4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday"
     }
     
     for file in file_list:
@@ -223,6 +203,9 @@ def clean_slc_datasets(file_list):
         df['date'] = df['incident_datetime'].dt.strftime('%m/%d/%Y')
         df['time_of_day'] = df['incident_datetime'].dt.strftime('%H:%M')
         
+        # 🔹 ADD SEASON
+        df = add_season(df, 'date')
+        
         df['day_of_week'] = df['day_of_week'].apply(
             lambda x: day_map.get(int(x)) if str(x).isdigit() else str(x).capitalize()
         )
@@ -240,31 +223,18 @@ def clean_slc_datasets(file_list):
         
         cleaned_dfs.append(df)
     
-    slc_df = pd.concat(cleaned_dfs, ignore_index=True)
-    
-    return slc_df
-
+    return pd.concat(cleaned_dfs, ignore_index=True)
 
 master_crime_df = clean_city_datasets(city_datasets)
 master_assult_df = clean_assult_dataset(slc_assault_2012)
 master_slc_df = clean_slc_datasets(agency_datasets)
 
-
-print(len(master_crime_df))
-print(master_crime_df.info())
-print(master_crime_df.head())
-
-print(len(master_assult_df))
-print(master_assult_df.info())
-print(master_assult_df.head())
-
-print(len(master_slc_df))
-print(master_slc_df.info())
-print(master_slc_df.head())
-
 OUTPUT_DIR = "cleaned_data"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 master_all_df = pd.concat([master_crime_df, master_assult_df, master_slc_df], ignore_index=True)
+
 output_file = os.path.join(OUTPUT_DIR, "master_crime_data.csv")
 master_all_df.to_csv(output_file, index=False)
+
 print(f"Master dataset saved to {output_file}")
