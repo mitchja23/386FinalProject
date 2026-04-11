@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utah Crime Spatial Migration · 2007–2019</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header id="page-header">
+    <div id="header-title">Utah Crime Spatial Migration <span class="year-range">2007 – 2019</span></div>
+  </header>
+
+  <main id="layout">
+    <div id="map-wrap">
+      <div id="map"></div>
+    </div>
+
+    <aside id="chart-panel">
+      <div id="chart-panel-title">Top 10 Cities</div>
+      <canvas id="bar-chart"></canvas>
+    </aside>
+
+  </main>
+
+  <div id="stats-bar">
+    <span class="stat-item"><span class="stat-label">INCIDENTS</span><span id="stat-total">—</span></span>
+    <span class="stat-sep">|</span>
+    <span class="stat-item"><span class="stat-label">VS PREV YEAR</span><span id="stat-change">—</span></span>
+    <span class="stat-sep">|</span>
+    <span class="stat-item"><span class="stat-label">PEAK CITY</span><span id="stat-peak">—</span></span>
+  </div>
+
+  <div id="controls">
+    <div id="year-control">
+      <span class="ctrl-label">YEAR</span>
+      <button id="btn-prev" class="year-btn" title="Previous year (←)">&#9664;</button>
+      <select id="year-select">
+        <option>2007</option><option>2008</option><option>2009</option>
+        <option>2010</option><option>2011</option><option>2012</option>
+        <option selected>2013</option><option>2014</option><option>2015</option>
+        <option>2016</option><option>2017</option><option>2018</option>
+        <option>2019</option>
+      </select>
+      <button id="btn-next" class="year-btn" title="Next year (→)">&#9654;</button>
+    </div>
+
+    <div class="ctrl-divider"></div>
+
+    <div id="cat-control">
+      <span class="ctrl-label">CRIME TYPE</span>
+      <div id="cat-pills">
+        <button class="cat-pill active" data-cat="All">All Crimes</button>
+        <button class="cat-pill" data-cat="Violent">Violent</button>
+        <button class="cat-pill" data-cat="Property">Property</button>
+        <button class="cat-pill" data-cat="Drugs">Drugs</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="loading-overlay">
+    <div id="loading-box">
+      <div class="spinner"></div>
+      <div id="loading-text">Loading crime data…</div>
+    </div>
+  </div>
+
+
+  <script src="js/map.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    fetch('./data/crime_data.json')
+      .then(function(r) {
+        if (!r.ok) throw new Error('Failed to fetch crime_data.json');
+        return r.json();
+      })
+      .then(function(data) {
+        if (typeof window.initMap !== 'function') {
+          throw new Error(
+            'Map script did not load.'
+          );
+        }
+        window.initMap(data);
+        window.initChart(data);
+        window.initControls(data);
+        document.getElementById('loading-overlay').style.display = 'none';
+      })
+      .catch(function(err) {
+        document.getElementById('loading-text').textContent = err.message;
+        document.querySelector('.spinner').style.display = 'none';
+      });
+  </script>
+
+</body>
+</html>
