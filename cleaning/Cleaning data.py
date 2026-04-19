@@ -2,33 +2,6 @@ import pandas as pd
 import os
 import re
 
-def add_season(df, date_col='date'):
-    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-    
-    def get_season(d):
-        if pd.isna(d):
-            return pd.NA
-        
-        year = d.year
-        
-        spring = pd.Timestamp(f"{year}-03-20")
-        summer = pd.Timestamp(f"{year}-06-21")
-        fall   = pd.Timestamp(f"{year}-09-23")
-        winter = pd.Timestamp(f"{year}-12-21")
-        
-        if d >= spring and d < summer:
-            return 'Spring'
-        elif d >= summer and d < fall:
-            return 'Summer'
-        elif d >= fall and d < winter:
-            return 'Fall'
-        else:
-            return 'Winter'
-    
-    df['season'] = df[date_col].apply(get_season)
-    
-    return df
-
 
 city_datasets = [
     "south_salt_lake_crime.csv",
@@ -76,8 +49,59 @@ desired_cols = [
     'season'
 ]
 
+def add_season(df, date_col='date'):
+    """
+    Adds a 'season' column to a DataFrame based on a date column.
+
+    The function converts the specified date column to datetime format and assigns
+    each row a season (Spring, Summer, Fall, Winter) based on the month.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing a date column.
+        date_col (str): Name of the column containing date values.
+
+    Returns:
+        pd.DataFrame: A copy of the original DataFrame with an added 'season' column.
+    """
+    df = df.copy()
+
+    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+
+    def get_season(d):
+        if pd.isna(d):
+            return pd.NA
+
+        month = d.month
+
+        if month in [3, 4, 5]:
+            return "Spring"
+        elif month in [6, 7, 8]:
+            return "Summer"
+        elif month in [9, 10, 11]:
+            return "Fall"
+        else:
+            return "Winter"
+
+    df["season"] = df[date_col].apply(get_season)
+
+    return df
+
 
 def clean_city_datasets(file_list):
+    """
+    Cleans and standardizes multiple city-level crime datasets.
+
+    This function reads each CSV file, standardizes column formats, cleans
+    incident descriptions, extracts date and time information, normalizes
+    city names, and adds a season column. Only desired columns are retained.
+
+    Parameters:
+        file_list (list): List of file paths to city crime datasets.
+
+    Returns:
+        pd.DataFrame: A single concatenated DataFrame containing cleaned data
+        from all input files.
+    """
     cleaned_dfs = []
     
     for file in file_list:
@@ -125,6 +149,20 @@ def clean_city_datasets(file_list):
 
 
 def clean_assult_dataset(file):
+    """
+    Cleans and standardizes the Salt Lake City assault dataset.
+
+    This function renames columns to match the standard schema, formats
+    datetime fields, extracts date and time, converts numeric day-of-week
+    values to names, extracts latitude and longitude from location strings,
+    and adds a season column.
+
+    Parameters:
+        file (str): File path to the assault dataset CSV.
+
+    Returns:
+        pd.DataFrame: A cleaned DataFrame containing only the desired columns.
+    """
     df = pd.read_csv(file)
     
     df = df.rename(columns={
@@ -174,6 +212,20 @@ def clean_assult_dataset(file):
 
 
 def clean_slc_datasets(file_list):
+    """
+    Cleans and standardizes Salt Lake City police datasets.
+
+    This function processes multiple SLC police CSV files by renaming columns,
+    formatting datetime fields, extracting date and time, converting day-of-week
+    values, assigning a fixed city name, and adding a season column. Missing
+    columns are filled as needed to match the standard schema.
+
+    Parameters:
+        file_list (list): List of file paths to SLC police datasets.
+
+    Returns:
+        pd.DataFrame: A single concatenated DataFrame of cleaned SLC data.
+    """
     cleaned_dfs = []
     
     day_map = {
@@ -223,15 +275,110 @@ def clean_slc_datasets(file_list):
     
     return pd.concat(cleaned_dfs, ignore_index=True)
 
+
+def clean_city_column(df, city_col="city"):
+    """
+    Standardizes and cleans the city column in a DataFrame.
+
+    This function normalizes city names by converting to lowercase, removing
+    extra text (such as commas or parentheses), expanding directional
+    abbreviations (e.g., 'N.' to 'north'), mapping known variations to
+    consistent names, and grouping non-city or invalid entries into a
+    common category. The final city names are formatted in title case.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing a city column.
+        city_col (str): Name of the column representing city names.
+
+    Returns:
+        pd.DataFrame: A copy of the DataFrame with a cleaned and standardized
+        city column.
+    """
+    df = df.copy()
+    df[city_col] = df[city_col].astype(str).str.strip().str.lower()
+    df[city_col] = df[city_col].apply(
+        lambda x: re.sub(r",.*|\(.*?\)", "", x)
+    )
+
+    def expand_dirs(x):
+        x = re.sub(r"^n\.?\s+", "north ", x)
+        x = re.sub(r"^s\.?\s+", "south ", x)
+        x = re.sub(r"^e\.?\s+", "east ", x)
+        x = re.sub(r"^w\.?\s+", "west ", x)
+        return x
+
+    df[city_col] = df[city_col].apply(expand_dirs)
+
+    map = {
+        "slc": "salt lake city",
+        "salt lake cty": "salt lake county",
+        "salt lake cnty": "salt lake county",
+        "s salt lake": "south salt lake",
+        "south salt lake city": "south salt lake",
+        "w valley city": "west valley city",
+        "west valley": "west valley city",
+        "s jordan city": "south jordan",
+        "south jordan city": "south jordan",
+        "too": "tooele",
+        "tooele army depot": "tooele",
+        "tooele city": "tooele",
+        "juab nephi": "nephi",
+        "Juab Co Mon Gr": "juab county"
+        
+    }
+
+    df[city_col] = df[city_col].replace(map)
+
+    other = { # the only county that we are keeping is cahce becasue we have data for it. 
+        "interstate",
+        "county nw",
+        "other",
+        "byu campus",
+        "temp",
+        "q",
+        "parleys canyon",
+        "logan canyon",
+        "weber canyon",
+        "utah valley u",
+        "salt lake county",
+        "davis county",
+        "summit county",
+        "wasatch county",
+        "tooele county",
+        "juab county",
+        "utah county",
+        "emery county"
+    }
+
+    df.loc[df[city_col].isin(other), city_col] = "county/interstate/other"
+
+    missing = df[city_col].isna()
+
+    numeric = df[city_col].apply(
+        lambda x: isinstance(x, (int, float)) or
+                  (isinstance(x, str) and x.replace('.', '', 1).isdigit())
+    )
+
+    df.loc[missing | numeric, city_col] = "county/interstate/other"
+
+    df[city_col] = (
+        df[city_col]
+        .str.replace(r"\s+", " ", regex=True)
+        .str.strip()
+        .str.title()
+    )
+    return df
+
+
 master_crime_df = clean_city_datasets(city_datasets)
 master_assult_df = clean_assult_dataset(slc_assault_2012)
 master_slc_df = clean_slc_datasets(agency_datasets)
+master_all_df = pd.concat([master_crime_df, master_assult_df, master_slc_df], ignore_index=True)
+master_all_df = clean_city_column(master_all_df)
+
 
 OUTPUT_DIR = "cleaned_data"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-master_all_df = pd.concat([master_crime_df, master_assult_df, master_slc_df], ignore_index=True)
-
 output_file = os.path.join(OUTPUT_DIR, "master_crime_data.csv")
 master_all_df.to_csv(output_file, index=False)
 
