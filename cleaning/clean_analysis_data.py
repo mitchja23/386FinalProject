@@ -4,7 +4,7 @@ import os
 master_crime = pd.read_csv("cleaned_data/master_crime_data.csv",low_memory=False)
 population_data = pd.read_csv("cleaned_data/city_populations.csv")
 
-desired_cols = ["crime_rate_per_100k", 
+desired_cols = ["incident_rate_per_100k", 
                 "city" ,
                 "season", 
                 "year"]
@@ -32,7 +32,7 @@ crime_summary = crime_summary.merge(
     how="left"
 )
 
-crime_summary["crime_rate_per_100k"] = (
+crime_summary["incident_rate_per_100k"] = (
     crime_summary["crime_counts"] / crime_summary["population"] * 100000
 )
 
