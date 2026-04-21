@@ -20,6 +20,9 @@ dependencies = [
     "streamlit-folium",
 ]
 
+[tool.poetry]
+package-mode = false
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["cleaning*", "visualizations*", "scrapping*", "Analysis*"]
