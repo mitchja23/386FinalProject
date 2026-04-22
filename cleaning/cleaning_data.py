@@ -148,7 +148,7 @@ def clean_city_datasets(file_list):
     return pd.concat(cleaned_dfs, ignore_index=True)
 
 
-def clean_assult_dataset(file):
+def clean_assault_dataset(file):
     """
     Cleans and standardizes the Salt Lake City assault dataset.
 
@@ -309,7 +309,7 @@ def clean_city_column(df, city_col="city"):
 
     df[city_col] = df[city_col].apply(expand_dirs)
 
-    map = {
+    alias_map = {
         "slc": "salt lake city",
         "salt lake cty": "salt lake county",
         "salt lake cnty": "salt lake county",
@@ -327,9 +327,9 @@ def clean_city_column(df, city_col="city"):
         
     }
 
-    df[city_col] = df[city_col].replace(map)
+    df[city_col] = df[city_col].replace(alias_map)
 
-    other = { # the only county that we are keeping is cahce becasue we have data for it. 
+    other = { # the only county we are keeping is Cache because we have population data for it.
         "interstate",
         "county nw",
         "other",
@@ -372,9 +372,9 @@ def clean_city_column(df, city_col="city"):
 
 if __name__ == "__main__":
     master_crime_df = clean_city_datasets(city_datasets)
-    master_assult_df = clean_assult_dataset(slc_assault_2012)
+    master_assault_df = clean_assault_dataset(slc_assault_2012)
     master_slc_df = clean_slc_datasets(agency_datasets)
-    master_all_df = pd.concat([master_crime_df, master_assult_df, master_slc_df], ignore_index=True)
+    master_all_df = pd.concat([master_crime_df, master_assault_df, master_slc_df], ignore_index=True)
     master_all_df = clean_city_column(master_all_df)
 
     OUTPUT_DIR = "cleaned_data"
