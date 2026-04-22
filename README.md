@@ -6,10 +6,10 @@ An analysis of crime incident rates across Utah municipalities from 2007 to 2019
 
 ## Links
 
-- [Documentation & API Reference](https://mitchja23.github.io/386FinalProject/api)
-- [Tutorial](https://mitchja23.github.io/386FinalProject/tutorial)
-- [Technical Report](https://mitchja23.github.io/386FinalProject/report)
-- [Streamlit App](https://mitchja23-386finalproject.streamlit.app)
+- [Documentation](https://mitchja23.github.io/386Website/projects/final-project/)
+- [Tutorial](https://mitchja23.github.io/386Website/projects/final-project/tutorial.html)
+- [Technical Report](https://mitchja23.github.io/386Website/projects/final-project/report.html)
+- [Streamlit App](https://386finalproject.streamlit.app/)
 - [GitHub Repo](https://github.com/mitchja23/386FinalProject)
 
 ## Dataset
